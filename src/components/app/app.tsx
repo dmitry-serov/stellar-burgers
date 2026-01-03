@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   ConstructorPage,
   Feed,
@@ -14,11 +15,18 @@ import styles from './app.module.css';
 
 import { AppHeader, IngredientDetails, Modal, OrderInfo } from '@components';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch } from '../../services/store';
+import { fetchIngredients } from '../../services/slices/ingredientsSlice';
 
 const App = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const background = location.state?.background;
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchIngredients());
+  }, [dispatch]);
 
   return (
     <div className={styles.app}>
