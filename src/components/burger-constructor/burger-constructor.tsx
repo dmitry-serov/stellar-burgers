@@ -13,6 +13,7 @@ import {
   selectOrderRequest,
   selectOrderModalData
 } from '../../services/slices/orderSlice';
+import { selectIsAuthenticated } from '../../services/slices/userSlice';
 
 export const BurgerConstructor: FC = () => {
   const dispatch = useDispatch();
@@ -20,15 +21,15 @@ export const BurgerConstructor: FC = () => {
   const constructorItems = useSelector(selectConstructorItems);
   const orderRequest = useSelector(selectOrderRequest);
   const orderModalData = useSelector(selectOrderModalData);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
 
   const onOrderClick = () => {
     if (!constructorItems.bun || orderRequest) return;
 
-    // TODO: добавить проверку авторизации после создания userSlice
-    // if (!isAuthenticated) {
-    //   navigate('/login');
-    //   return;
-    // }
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
 
     const ingredientIds = [
       constructorItems.bun._id,
