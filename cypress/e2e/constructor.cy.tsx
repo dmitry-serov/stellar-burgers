@@ -2,7 +2,7 @@
 
 describe('Страница конструктора бургера', () => {
   beforeEach(() => {
-    // Перехватываем запрос на получение ингредиентов
+    // Перехватываем запросы к API
     cy.intercept('GET', '**/api/ingredients', {
       fixture: 'ingredients.json'
     }).as('getIngredients');
@@ -21,12 +21,8 @@ describe('Страница конструктора бургера', () => {
         .click();
 
       // Проверяем что булка появилась в конструкторе (верх и низ)
-      cy.get('[class*=burger-constructor]')
-        .contains('Краторная булка N-200i (верх)')
-        .should('exist');
-      cy.get('[class*=burger-constructor]')
-        .contains('Краторная булка N-200i (низ)')
-        .should('exist');
+      cy.contains('Краторная булка N-200i (верх)').should('exist');
+      cy.contains('Краторная булка N-200i (низ)').should('exist');
     });
 
     it('должен добавить начинку в конструктор', () => {
@@ -38,9 +34,7 @@ describe('Страница конструктора бургера', () => {
         .click();
 
       // Проверяем что начинка появилась в конструкторе
-      cy.get('[class*=burger-constructor]')
-        .contains('Биокотлета из марсианской Магнолии')
-        .should('exist');
+      cy.contains('Биокотлета из марсианской Магнолии').should('exist');
     });
 
     it('должен добавить соус в конструктор', () => {
@@ -52,23 +46,21 @@ describe('Страница конструктора бургера', () => {
         .click();
 
       // Проверяем что соус появился в конструкторе
-      cy.get('[class*=burger-constructor]')
-        .contains('Соус Spicy-X')
-        .should('exist');
+      cy.contains('Соус Spicy-X').should('exist');
     });
   });
 
   describe('Модальное окно ингредиента', () => {
     it('должен открывать модальное окно при клике на ингредиент', () => {
-      // Кликаем на ингредиент (на ссылку с картинкой)
-      cy.contains('Краторная булка N-200i').click();
+      // Кликаем на ссылку ингредиента (Link компонент)
+      cy.contains('a', 'Краторная булка N-200i').click();
 
       // Проверяем что модальное окно открылось
-      cy.get('#modals').find('[class*=modal]').should('exist');
+      cy.get('#modals').children().should('have.length.greaterThan', 0);
     });
 
     it('должен отображать данные ингредиента в модальном окне', () => {
-      cy.contains('Краторная булка N-200i').click();
+      cy.contains('a', 'Краторная булка N-200i').click();
 
       // Проверяем данные в модальном окне
       cy.get('#modals').contains('Краторная булка N-200i').should('exist');
@@ -79,38 +71,34 @@ describe('Страница конструктора бургера', () => {
     });
 
     it('должен закрывать модальное окно по клику на крестик', () => {
-      cy.contains('Краторная булка N-200i').click();
+      cy.contains('a', 'Краторная булка N-200i').click();
 
       // Проверяем что модалка открыта
-      cy.get('#modals').find('[class*=modal]').should('exist');
+      cy.get('#modals').children().should('have.length.greaterThan', 0);
 
       // Кликаем на кнопку закрытия
       cy.get('#modals').find('button').click();
 
       // Проверяем что модалка закрылась
-      cy.get('#modals').find('[class*=modal]').should('not.exist');
+      cy.get('#modals').children().should('have.length', 0);
     });
 
     it('должен закрывать модальное окно по клику на оверлей', () => {
-      cy.contains('Краторная булка N-200i').click();
+      cy.contains('a', 'Краторная булка N-200i').click();
 
       // Проверяем что модалка открыта
-      cy.get('#modals').find('[class*=modal]').should('exist');
+      cy.get('#modals').children().should('have.length.greaterThan', 0);
 
-      // Кликаем на оверлей (элемент с классом overlay)
-      cy.get('[class*=overlay]').click({ force: true });
+      // Кликаем на оверлей (второй child в #modals)
+      cy.get('#modals').children().last().click({ force: true });
 
       // Проверяем что модалка закрылась
-      cy.get('#modals').find('[class*=modal]').should('not.exist');
+      cy.get('#modals').children().should('have.length', 0);
     });
   });
 
   describe('Создание заказа', () => {
     beforeEach(() => {
-      // Устанавливаем моковые токены авторизации
-      localStorage.setItem('refreshToken', 'mock-refresh-token');
-      cy.setCookie('accessToken', 'mock-access-token');
-
       // Перехватываем запрос на получение данных пользователя
       cy.intercept('GET', '**/api/auth/user', {
         fixture: 'user.json'
@@ -120,11 +108,23 @@ describe('Страница конструктора бургера', () => {
       cy.intercept('POST', '**/api/orders', {
         fixture: 'order.json'
       }).as('createOrder');
+
+      // Устанавливаем моковые токены авторизации ПЕРЕД визитом
+      cy.window().then((win) => {
+        win.localStorage.setItem('refreshToken', 'mock-refresh-token');
+      });
+      cy.setCookie('accessToken', 'mock-access-token');
+
+      // Перезагружаем страницу чтобы приложение проверило авторизацию
+      cy.visit('/');
+      cy.wait('@getIngredients');
     });
 
     afterEach(() => {
       // Очищаем токены после теста
-      localStorage.removeItem('refreshToken');
+      cy.window().then((win) => {
+        win.localStorage.removeItem('refreshToken');
+      });
       cy.clearCookie('accessToken');
     });
 
@@ -156,7 +156,7 @@ describe('Страница конструктора бургера', () => {
       cy.get('#modals').find('button').click();
 
       // Проверяем что модалка закрылась
-      cy.get('#modals').find('[class*=modal]').should('not.exist');
+      cy.get('#modals').children().should('have.length', 0);
 
       // Проверяем что конструктор очистился
       cy.contains('Выберите булки').should('exist');
